@@ -17,6 +17,7 @@ class RAG:
     def __init__(self, faiss_index_path='faiss_index'):
 
         # Convert string files into documents
+        self.conversation_history = []
         documents=load_data()
         self.document_list = [{"text": doc, "metadata": {"source": f"doc_{i}"}} for i, doc in enumerate(documents)]
 
@@ -51,10 +52,17 @@ class RAG:
             retriever=self.vectorstore.as_retriever(),
             llm=OpenAI(temperature=0.7),
         )
-        self.instruction="You are a medical advisor, based on the query and the documents,  what should be asked from the person. Also you can have some recommendations. but further questions that could help gather critical information is the priority. if there is no query, output empty text like '' ."
+        self.instruction="You are a medical advisor, based on the query and the documents,  what should be asked from the person. Also you can have some recommendations. but further questions that could help gather critical information is the priority. if there is no query, output empty text like '' You get both history and the current query."
     def ask_question(self, question):
-        prompt = f"{self.instruction}\n\nQuestion: {question}\nAnswer:"
-        result = self.retrieval_chain(question)
+        prompt = f"{self.instruction}\n\nQuestion: {question}\nHistory of inputs: {self.conversation_history}\nAnswer:"
+        result = self.retrieval_chain(prompt)
+        if len(question)>4:
+            self.add_to_history(question,result)
         return result['result']
 
+    def add_to_history(self, question, result):
+        self.conversation_history.append({
+            'question': question,
+            'result': result,
+        })
 

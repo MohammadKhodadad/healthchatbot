@@ -14,12 +14,12 @@ class MainChatbot:
 
         # Define prompt templates for the two chains
         self.health_info_prompt_template = PromptTemplate(
-            template="You are an information extractor. There is this text and it might have something that is related to the person health.If there is something clearly stated in the text, extract and return it. If there is no important health information, empty text like '' .\n\nText: {input}\nHealth Info:",
+            template="You are an information extractor. There is this text and it might have something that is related to the person health.If there is something clearly stated in the text, extract and return it. If there is no important health information, return empty text like '' .\n\nText: {input}\nHealth Info:",
             input_variables=["input"]
         )
         self.answer_prompt_template = PromptTemplate(
-            template="You are a friendly chatbot, you also have a medical side chatbot that guides you sometimes. Continue the conversation based on the following input: {input}\n medical advice: {medical_advice}\nBot:",
-            input_variables=["input",'medical_advice']
+            template="You are a friendly chatbot, you also have a medical side chatbot that guides you sometimes. but you are the only one communicating to the person Continue the conversation based on the input, medical advice from the sidechat bot and history of your chat. You just have to give them a response based on the current query.\ninput: {input}\n medical advice: {medical_advice}\nConversation history: {conversation_history}\nBot:",
+            input_variables=["input",'medical_advice','conversation_history']
         )
 
         # Initialize the LangChain models for each task
@@ -39,20 +39,16 @@ class MainChatbot:
     def generate_response(self, user_input):
         # Extract health-related information
         health_info = self.health_info_chain.run(input=user_input).strip()
-        if len(health_info)>0:
+        if len(health_info)>4:
             medical_advice = self.rag.ask_question(health_info)
         else:
             medical_advice = ''
-        inputs = {
-            "input": user_input,
-            "medical_advice": medical_advice
-        }
-        bot_response = self.answer_chain.run(input=user_input,medical_advice=medical_advice).strip()
+        bot_response = self.answer_chain.run(input=user_input,medical_advice=medical_advice,conversation_history=self.conversation_history).strip()
 
         self.add_to_history(user_input, health_info,medical_advice, bot_response)
         return {
             'user_input': user_input,
-            'health_info': health_info if health_info else "No health information extracted.",
+            'health_info': health_info,
             'medical_advice':medical_advice,
             'bot_response': bot_response,
             
