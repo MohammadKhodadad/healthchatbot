@@ -52,17 +52,21 @@ class RAG:
             retriever=self.vectorstore.as_retriever(),
             llm=OpenAI(temperature=0.7),
         )
-        self.instruction="You are a medical advisor, based on the query and the documents,  what should be asked from the person. Also you can have some recommendations. but further questions that could help gather critical information is the priority. if there is no query, output empty text like '' You get both history and the current query."
+        self.instruction_for_feedback="You are a medical advisor, based on the query, History of pieces of information for the person and the documents,  what should be asked from the person. Also you can have some recommendations. but further questions that could help gather critical information is the priority. if there is no query, output empty text like '' ."
+        self.instruction_for_extraction="You are a medical advisor, based on the query and the documents, extract the piece of information existing in the input that is related to the persons health. if there is nothing output empty"
     def ask_question(self, question):
-        prompt = f"{self.instruction}\n\nQuestion: {question}\nHistory of inputs: {self.conversation_history}\nAnswer:"
-        result = self.retrieval_chain(prompt)
         if len(question)>4:
-            self.add_to_history(question,result)
-        return result['result']
+            prompt = f"{self.instruction_for_feedback}\n\nQuestion: {question}\nHistory of pieces of information: {self.conversation_history}\nAnswer:"
+            result = self.retrieval_chain(prompt)
+            prompt = f"{self.instruction_for_extraction}\n\nQuestion: {question}\nAnswer:"
+            extracted_info = self.retrieval_chain(prompt)
+            self.add_to_history(extracted_info['result'])
+            return result['result']
+        else:
+            return ''
 
-    def add_to_history(self, question, result):
+    def add_to_history(self, result):
         self.conversation_history.append({
-            'question': question,
-            'result': result,
+            'info': result,
         })
-
+        

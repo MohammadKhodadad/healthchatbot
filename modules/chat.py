@@ -2,6 +2,7 @@ import os
 import openai
 from dotenv import load_dotenv
 from langchain import OpenAI, LLMChain, PromptTemplate
+# from langchain_openai import ChatOpenAI
 from .rag import RAG
 # Load API key from .env file
 load_dotenv()
@@ -14,7 +15,7 @@ class MainChatbot:
 
         # Define prompt templates for the two chains
         self.health_info_prompt_template = PromptTemplate(
-            template="You are an information extractor. There is this text and it might have something that is related to the person health.If there is something clearly stated in the text, extract and return it. If there is no important health information, return empty text like '' .\n\nText: {input}\nHealth Info:",
+            template="You are an information extractor. There is this part of a conversation where a person says something and it might have something that is related to the person health. If there is something clearly stated in the text, extract and return it. If there is no important health information, return '' .\n\nText: {input}\nHealth Info:",
             input_variables=["input"]
         )
         self.answer_prompt_template = PromptTemplate(
@@ -23,6 +24,9 @@ class MainChatbot:
         )
 
         # Initialize the LangChain models for each task
+        # llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2, max_tokens=4000).bind(
+        #     response_format={"type": "json_object"}
+        # )
         self.health_info_chain = LLMChain(llm=OpenAI(temperature=0.7), prompt=self.health_info_prompt_template)
         self.answer_chain = LLMChain(llm=OpenAI(temperature=0.7), prompt=self.answer_prompt_template)
         print("everything ready before rag")
